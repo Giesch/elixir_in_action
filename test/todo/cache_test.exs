@@ -13,7 +13,10 @@ defmodule Todo.CacheTest do
     {:ok, cache} = Todo.Cache.start()
     alice = Todo.Cache.server_process(cache, "alice")
     Todo.Server.add_entry(alice, %{date: ~D[2018-12-19], title: "Dentist"})
-    entries = Todo.Server.entries(alice, ~D[2018-12-19])
-    assert [%{date: ~D[2018-12-19], title: "Dentist"}] = entries
+
+    [entry | _rest] = Todo.Server.entries(alice, ~D[2018-12-19])
+    expected_entry = %{date: ~D[2018-12-19], title: "Dentist"}
+
+    assert entry = expected_entry
   end
 end
