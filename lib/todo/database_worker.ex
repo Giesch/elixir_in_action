@@ -9,8 +9,8 @@ defmodule Todo.DatabaseWorker do
     GenServer.cast(worker, {:store, key, data})
   end
 
-  def get(worker, key, original_caller) do
-    GenServer.call(worker, {:get, key, original_caller})
+  def get(worker, key) do
+    GenServer.call(worker, {:get, key})
   end
 
   @impl GenServer
@@ -28,7 +28,7 @@ defmodule Todo.DatabaseWorker do
   end
 
   @impl GenServer
-  def handle_call({:get, key, _caller}, _, folder) do
+  def handle_call({:get, key}, _, folder) do
     {:reply, lookup(key, folder), folder}
   end
 

@@ -8,48 +8,36 @@ defmodule Todo.Database do
   end
 
   def store(key, data) do
-    GenServer.cast(__MODULE__, {:store, key, data})
+    key
+    |> choose_worker()
+    |> Todo.DatabaseWorker.store(key, data)
   end
 
   def get(key) do
-    GenServer.call(__MODULE__, {:get, key})
+    key
+    |> choose_worker()
+    |> Todo.DatabaseWorker.get(key)
   end
 
   @impl GenServer
   def init(_) do
     File.mkdir_p!(@db_folder)
-
-    workers = %{
-      0 => start_worker(),
-      1 => start_worker(),
-      2 => start_worker()
-    }
-
+    workers = Enum.into(0..2, %{}, &start_worker/1)
     {:ok, workers}
   end
 
-  defp start_worker() do
+  defp start_worker(n) do
     {:ok, worker} = Todo.DatabaseWorker.start(@db_folder)
-    worker
+    {n, worker}
+  end
+
+  defp choose_worker(key) do
+    GenServer.call(__MODULE__, {:choose_worker, key})
   end
 
   @impl GenServer
-  def handle_cast({:store, key, data}, workers) do
-    key
-    |> choose_worker(workers)
-    |> Todo.DatabaseWorker.store(key, data)
-
-    {:noreply, workers}
-  end
-
-  @impl GenServer
-  def handle_call({:get, key}, caller, workers) do
-    reply =
-      key
-      |> choose_worker(workers)
-      |> Todo.DatabaseWorker.get(key, caller)
-
-    {:reply, reply, workers}
+  def handle_call({:choose_worker, key}, _from, workers) do
+    {:reply, choose_worker(key, workers), workers}
   end
 
   defp choose_worker(key, workers) do

@@ -9,14 +9,21 @@ defmodule Todo.CacheTest do
     assert bob_pid == Todo.Cache.server_process(cache, "bob")
   end
 
+  # TODO clean up persisted stuff before tests or use fixture
   test "todo operations" do
     {:ok, cache} = Todo.Cache.start()
     alice = Todo.Cache.server_process(cache, "alice")
+
+    initial_entries_count = Enum.count(Todo.Server.entries(alice, ~D[2018-12-19]))
     Todo.Server.add_entry(alice, %{date: ~D[2018-12-19], title: "Dentist"})
 
-    [entry | _rest] = Todo.Server.entries(alice, ~D[2018-12-19])
-    expected_entry = %{date: ~D[2018-12-19], title: "Dentist"}
+    entries = Todo.Server.entries(alice, ~D[2018-12-19])
+    entries_count = Enum.count(entries)
 
-    assert entry = expected_entry
+    assert entries_count == initial_entries_count + 1
+
+    assert Enum.any?(entries, fn entry ->
+             entry[:date] == ~D[2018-12-19] && entry[:title] == "Dentist"
+           end)
   end
 end
